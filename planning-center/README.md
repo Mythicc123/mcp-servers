@@ -1,70 +1,75 @@
 # planning-center MCP Server
 
-MCP server for Planning Center Services — roster and team scheduling tools
+An MCP server that exposes Planning Center Services data as AI-callable tools — roster queries, upcoming service plans, and unassigned slot detection via natural language in Claude Desktop.
 
-This is a TypeScript-based MCP server that implements a simple notes system. It demonstrates core MCP concepts by providing:
+## Why it exists
 
-- Resources representing text notes with URIs and metadata
-- Tools for creating new notes
-- Prompts for generating summaries of notes
+Managing a church music roster across multiple Sundays means regularly cross-referencing who's available, what's coming up, and where the gaps are. Doing that manually through the Planning Center UI is slow. This server makes it a single question to Claude.
 
-## Features
+## Tools
 
-### Resources
-- List and access notes via `note://` URIs
-- Each note has a title, content and metadata
-- Plain text mime type for simple content access
+| Tool | Description |
+|---|---|
+| `get_service_types` | Lists all service types (e.g. Sunday Morning, Youth) with their IDs |
+| `get_upcoming_roster` | Returns rostered team members for upcoming plans within a given service type |
+| `get_unassigned_slots` | Surfaces team positions with no one rostered across upcoming services |
 
-### Tools
-- `create_note` - Create new text notes
-  - Takes title and content as required parameters
-  - Stores note in server state
-
-### Prompts
-- `summarize_notes` - Generate a summary of all stored notes
-  - Includes all note contents as embedded resources
-  - Returns structured prompt for LLM summarization
-
-## Development
-
-Install dependencies:
-```bash
-npm install
+## Architecture
+```
+Claude Desktop
+     │ MCP (stdio)
+     ▼
+planning-center server (Node.js)
+     │ HTTP Basic Auth (Personal Access Token)
+     ▼
+Planning Center REST API
+/services/v2/service_types
+/services/v2/service_types/{id}/plans
+/services/v2/service_types/{id}/plans/{id}/team_members
 ```
 
-Build the server:
+## Setup
+
+**1. Get a Personal Access Token**
+
+Go to `https://api.planningcenteronline.com/oauth/applications`, register an app, then navigate to Personal Access Tokens and generate one.
+
+**2. Install and build**
 ```bash
+cd planning-center
+npm install
 npm run build
 ```
 
-For development with auto-rebuild:
-```bash
-npm run watch
-```
+**3. Configure Claude Desktop**
 
-## Installation
-
-To use with Claude Desktop, add the server config:
-
-On MacOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
-On Windows: `%APPDATA%/Claude/claude_desktop_config.json`
-
+Add to your `claude_desktop_config.json`:
 ```json
 {
   "mcpServers": {
     "planning-center": {
-      "command": "/path/to/planning-center/build/index.js"
+      "command": "node",
+      "args": ["/absolute/path/to/planning-center/build/index.js"],
+      "env": {
+        "PCO_APP_ID": "your_app_id",
+        "PCO_SECRET": "your_personal_access_token"
+      }
     }
   }
 }
 ```
 
-### Debugging
+Restart Claude Desktop. The tools will appear in the hammer icon menu.
 
-Since MCP servers communicate over stdio, debugging can be challenging. We recommend using the [MCP Inspector](https://github.com/modelcontextprotocol/inspector), which is available as a package script:
+## Key Decisions
 
-```bash
-npm run inspector
-```
+**Personal Access Token over OAuth** — this server accesses one org's data on behalf of one user. OAuth is the right choice when building multi-tenant apps; it's unnecessary overhead here.
 
-The Inspector will provide a URL to access debugging tools in your browser.
+**No caching** — Planning Center roster data changes frequently enough that caching would require invalidation logic. Live queries keep it simple and accurate.
+
+**Unassigned status via `"U"` filter** — Planning Center's API returns team member status as a single character. `"U"` is unconfirmed/unassigned. This is undocumented but consistent across the API — confirmed by live testing.
+
+## What's next
+
+- `get_member_schedule` — query an individual's upcoming commitments
+- `find_available_member` — cross-reference a role and date against existing assignments
