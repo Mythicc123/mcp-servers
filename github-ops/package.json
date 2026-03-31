@@ -1,0 +1,27 @@
+{
+  "name": "github-ops",
+  "version": "0.1.0",
+  "description": "MCP server for GitHub Actions CI/CD operations across portfolio",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "github-ops": "./build/index.js"
+  },
+  "files": [
+    "build"
+  ],
+  "scripts": {
+    "build": "tsc && node -e \"require('fs').chmodSync('build/index.js', '755')\"",
+    "prepare": "npm run build",
+    "watch": "tsc --watch",
+    "inspector": "npx @modelcontextprotocol/inspector build/index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "dotenv": "^17.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.24",
+    "typescript": "^5.3.3"
+  }
+}
