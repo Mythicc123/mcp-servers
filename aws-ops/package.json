@@ -1,0 +1,31 @@
+{
+  "name": "aws-ops",
+  "version": "0.1.0",
+  "description": "MCP server for AWS resource monitoring across portfolio infrastructure",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "aws-ops": "./build/index.js"
+  },
+  "files": [
+    "build"
+  ],
+  "scripts": {
+    "build": "tsc && node -e \"require('fs').chmodSync('build/index.js', '755')\"",
+    "prepare": "npm run build",
+    "watch": "tsc --watch",
+    "inspector": "npx @modelcontextprotocol/inspector build/index.js"
+  },
+  "dependencies": {
+    "@aws-sdk/client-cloudwatch": "^3.1021.0",
+    "@aws-sdk/client-cloudwatch-logs": "^3.1021.0",
+    "@aws-sdk/client-ec2": "^3.1021.0",
+    "@aws-sdk/client-s3": "^3.1021.0",
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "dotenv": "^17.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.24",
+    "typescript": "^5.3.3"
+  }
+}
